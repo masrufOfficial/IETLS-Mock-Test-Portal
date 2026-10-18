@@ -24,6 +24,18 @@ export function getCandidates(): Candidate[] {
   try {
     const parsed = JSON.parse(stored);
     if (Array.isArray(parsed) && parsed.length > 0) {
+      if (explicitlyCleared !== 'true') {
+        let updated = false;
+        INITIAL_CANDIDATES.forEach((initCand) => {
+          if (!parsed.some((c: Candidate) => c.id === initCand.id)) {
+            parsed.push(initCand);
+            updated = true;
+          }
+        });
+        if (updated) {
+          localStorage.setItem(CANDIDATES_KEY, JSON.stringify(parsed));
+        }
+      }
       return parsed;
     }
     if (explicitlyCleared === 'true') {
@@ -78,15 +90,24 @@ export function getTestAttempts(): TestAttempt[] {
       localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(INITIAL_TEST_ATTEMPTS));
       return INITIAL_TEST_ATTEMPTS;
     }
-    // Enrich matching initial sample attempts with recordings if missing
-    INITIAL_TEST_ATTEMPTS.forEach((initAttempt) => {
-      const match = attempts.find((a) => a.id === initAttempt.id);
-      if (match && (!match.scores?.speaking?.recordings || !match.scores.speaking.recordings.part1AudioUrl)) {
-        if (!match.scores) match.scores = initAttempt.scores;
-        if (!match.scores.speaking) match.scores.speaking = initAttempt.scores.speaking;
-        match.scores.speaking.recordings = initAttempt.scores.speaking.recordings;
+    if (explicitlyCleared !== 'true') {
+      let updated = false;
+      INITIAL_TEST_ATTEMPTS.forEach((initAttempt) => {
+        const match = attempts.find((a) => a.id === initAttempt.id);
+        if (!match) {
+          attempts.push(initAttempt);
+          updated = true;
+        } else if (!match.scores?.speaking?.recordings || !match.scores.speaking.recordings.part1AudioUrl) {
+          if (!match.scores) match.scores = initAttempt.scores;
+          if (!match.scores.speaking) match.scores.speaking = initAttempt.scores.speaking;
+          match.scores.speaking.recordings = initAttempt.scores.speaking.recordings;
+          updated = true;
+        }
+      });
+      if (updated) {
+        localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts));
       }
-    });
+    }
     return attempts;
   } catch {
     return INITIAL_TEST_ATTEMPTS;
