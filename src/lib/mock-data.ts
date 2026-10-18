@@ -15,9 +15,9 @@ export const INITIAL_MOCK_TESTS: MockTest[] = [
     title: 'Cambridge 01 - Test 1',
     badge: 'STANDARD',
     duration: '2h 30m',
-    sectionsCount: 3,
+    sectionsCount: 4,
     type: 'academic',
-    description: 'Classic Cambridge IELTS Academic mock covering Listening, Reading, and Writing modules.',
+    description: 'Classic Cambridge IELTS Academic mock covering Listening, Reading, Writing, and Speaking modules.',
   },
   {
     id: 'cambridge-01-t2',
@@ -27,6 +27,24 @@ export const INITIAL_MOCK_TESTS: MockTest[] = [
     sectionsCount: 4,
     type: 'academic',
     description: 'Comprehensive IELTS test battery with updated Academic Reading passages and real-time timer.',
+  },
+  {
+    id: 'bubt-mock-02',
+    title: 'Academic Mock 02 — AI & Future Technologies',
+    badge: 'INNOVATION',
+    duration: '2h 45m',
+    sectionsCount: 4,
+    type: 'academic',
+    description: 'Contemporary academic mock analyzing artificial intelligence, autonomous robotics, renewable energies, and automated economies.',
+  },
+  {
+    id: 'cambridge-02-t1',
+    title: 'Cambridge 02 — Environmental Science & Global Climate',
+    badge: 'CLIMATE FOCUS',
+    duration: '2h 45m',
+    sectionsCount: 4,
+    type: 'academic',
+    description: 'Rigorous 4-skill examination exploring deep ocean ecosystems, polar ice-sheet dynamics, and sustainable urban design.',
   },
   {
     id: 'bubt-writing-intensive',
@@ -262,14 +280,110 @@ Lecturer: Bullet trains demonstrated that electrified passenger rail provides th
 Lecturer: Modern high-speed rail corridors reduce greenhouse gas emissions by up to 75 percent per passenger-kilometer compared to regional aviation, while fostering economic decentralization across secondary urban clusters.`
 };
 
-// Wire full question battery into default test
-if (INITIAL_MOCK_TESTS.length > 0) {
-  INITIAL_MOCK_TESTS[0].listeningQuestions = LISTENING_QUESTIONS;
-  INITIAL_MOCK_TESTS[0].readingPassages = READING_PASSAGES;
-  INITIAL_MOCK_TESTS[0].writingTasks = WRITING_TASKS;
-  INITIAL_MOCK_TESTS[0].speakingSections = SPEAKING_PROMPTS;
-  INITIAL_MOCK_TESTS[0].listeningAudioScripts = LISTENING_AUDIO_SCRIPTS;
+// Wire full question batteries into all mock tests
+INITIAL_MOCK_TESTS.forEach((test) => {
+  test.listeningQuestions = LISTENING_QUESTIONS;
+  test.readingPassages = READING_PASSAGES;
+  test.writingTasks = WRITING_TASKS;
+  test.speakingSections = SPEAKING_PROMPTS;
+  test.listeningAudioScripts = LISTENING_AUDIO_SCRIPTS;
+});
+
+/**
+ * Generates a valid RIFF WAVE PCM 8kHz mono audio Base64 Data URL.
+ * Enables in-browser native <audio> playback and animated progress without external MP3 assets.
+ */
+export function generateSampleAudio(durationSec = 3, baseFreq = 260): string {
+  const sampleRate = 8000;
+  const numSamples = Math.floor(sampleRate * durationSec);
+  const totalBytes = 44 + numSamples;
+  const buffer = new Uint8Array(totalBytes);
+
+  // RIFF header
+  buffer[0] = 0x52; buffer[1] = 0x49; buffer[2] = 0x46; buffer[3] = 0x46;
+  const fileSize = totalBytes - 8;
+  buffer[4] = fileSize & 0xff;
+  buffer[5] = (fileSize >> 8) & 0xff;
+  buffer[6] = (fileSize >> 16) & 0xff;
+  buffer[7] = (fileSize >> 24) & 0xff;
+
+  // WAVE format
+  buffer[8] = 0x57; buffer[9] = 0x41; buffer[10] = 0x56; buffer[11] = 0x45;
+  buffer[12] = 0x66; buffer[13] = 0x6d; buffer[14] = 0x74; buffer[15] = 0x20;
+  buffer[16] = 16; buffer[17] = 0; buffer[18] = 0; buffer[19] = 0;
+  buffer[20] = 1; buffer[21] = 0; // PCM
+  buffer[22] = 1; buffer[23] = 0; // Mono
+
+  buffer[24] = sampleRate & 0xff;
+  buffer[25] = (sampleRate >> 8) & 0xff;
+  buffer[26] = (sampleRate >> 16) & 0xff;
+  buffer[27] = (sampleRate >> 24) & 0xff;
+
+  buffer[28] = sampleRate & 0xff;
+  buffer[29] = (sampleRate >> 8) & 0xff;
+  buffer[30] = (sampleRate >> 16) & 0xff;
+  buffer[31] = (sampleRate >> 24) & 0xff;
+
+  buffer[32] = 1; buffer[33] = 0;
+  buffer[34] = 8; buffer[35] = 0; // 8-bit
+
+  // data chunk
+  buffer[36] = 0x64; buffer[37] = 0x61; buffer[38] = 0x74; buffer[39] = 0x61;
+  buffer[40] = numSamples & 0xff;
+  buffer[41] = (numSamples >> 8) & 0xff;
+  buffer[42] = (numSamples >> 16) & 0xff;
+  buffer[43] = (numSamples >> 24) & 0xff;
+
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const s1 = Math.sin(2 * Math.PI * baseFreq * t);
+    const s2 = 0.4 * Math.sin(2 * Math.PI * (baseFreq * 1.5) * t);
+    const s3 = 0.2 * Math.sin(2 * Math.PI * (baseFreq * 2.0) * t);
+    const envelope = Math.min(1, Math.min(t * 3, (durationSec - t) * 3));
+    const sample = 128 + Math.round(45 * (s1 + s2 + s3) * envelope);
+    buffer[44 + i] = Math.max(0, Math.min(255, sample));
+  }
+
+  let binary = '';
+  for (let i = 0; i < totalBytes; i++) {
+    binary += String.fromCharCode(buffer[i]);
+  }
+  const b64 = typeof window !== 'undefined' ? window.btoa(binary) : Buffer.from(binary, 'binary').toString('base64');
+  return 'data:audio/wav;base64,' + b64;
 }
+
+export const DUMMY_RECORDINGS = {
+  masruf: {
+    part1AudioUrl: generateSampleAudio(4, 240),
+    part2AudioUrl: generateSampleAudio(6, 260),
+    part3AudioUrl: generateSampleAudio(5, 280),
+  },
+  sadia: {
+    part1AudioUrl: generateSampleAudio(4, 340),
+    part2AudioUrl: generateSampleAudio(5, 360),
+    part3AudioUrl: generateSampleAudio(5, 350),
+  },
+  tanvir: {
+    part1AudioUrl: generateSampleAudio(4, 220),
+    part2AudioUrl: generateSampleAudio(6, 230),
+    part3AudioUrl: generateSampleAudio(5, 240),
+  },
+  farhana: {
+    part1AudioUrl: generateSampleAudio(4, 320),
+    part2AudioUrl: generateSampleAudio(5, 330),
+    part3AudioUrl: generateSampleAudio(5, 340),
+  },
+  nusrat: {
+    part1AudioUrl: generateSampleAudio(4, 310),
+    part2AudioUrl: generateSampleAudio(6, 330),
+    part3AudioUrl: generateSampleAudio(5, 320),
+  },
+  mahmudul: {
+    part1AudioUrl: generateSampleAudio(4, 210),
+    part2AudioUrl: generateSampleAudio(5, 220),
+    part3AudioUrl: generateSampleAudio(4, 230),
+  },
+};
 
 export const INITIAL_CANDIDATES: Candidate[] = [
   {
@@ -287,7 +401,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     name: 'Sadia Islam',
     email: 'sadia.islam@gmail.com',
     mobile: '+8801823456789',
-    university: 'University of Dhaka',
+    university: 'University of Dhaka (Department of English)',
     address: 'Curzon Hall Road, Nilkhet, Dhaka',
     targetBand: 7.5,
     registeredAt: '2026-10-17T14:15:00Z',
@@ -322,9 +436,40 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     targetBand: 6.5,
     registeredAt: '2026-10-14T10:20:00Z',
   },
+  {
+    id: 'BUBT-2026-1047',
+    name: 'Nusrat Jahan Mim',
+    email: 'nusrat.mim@bubt.edu.bd',
+    mobile: '+8801712345678',
+    university: 'BUBT (Department of English)',
+    address: 'Rupnagar R/A, Mirpur-2, Dhaka',
+    targetBand: 8.0,
+    registeredAt: '2026-10-18T08:10:00Z',
+  },
+  {
+    id: 'BUBT-2026-1048',
+    name: 'Mahmudul Hasan',
+    email: 'mahmudul.hasan@bubt.edu.bd',
+    mobile: '+8801987654321',
+    university: 'BUBT (Faculty of Business Studies)',
+    address: 'Dhanmondi 27, Dhaka-1209',
+    targetBand: 7.0,
+    registeredAt: '2026-10-18T11:05:00Z',
+  },
+  {
+    id: 'BUBT-2026-1049',
+    name: 'Anika Tabassum',
+    email: 'anika.tabassum@gmail.com',
+    mobile: '+8801734567891',
+    university: 'BUBT (Dept of EEE)',
+    address: 'Uttara Sector 11, Dhaka',
+    targetBand: 8.0,
+    registeredAt: '2026-10-18T13:40:00Z',
+  },
 ];
 
 export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
+  // ATTEMPT 1: Masruf Rahman (EVALUATED - Band 8.0)
   {
     id: 'ATT-2026-001',
     candidateId: 'BUBT-2026-1042',
@@ -362,6 +507,7 @@ export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
       },
       speaking: {
         mode: 'audio_record',
+        recordings: DUMMY_RECORDINGS.masruf,
         fcScore: 8.5,
         lrScore: 8.0,
         graScore: 8.0,
@@ -372,6 +518,8 @@ export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
       },
     },
   },
+
+  // ATTEMPT 2: Sadia Islam (EVALUATED - Band 7.5)
   {
     id: 'ATT-2026-002',
     candidateId: 'BUBT-2026-1043',
@@ -397,8 +545,8 @@ export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
         completedAt: '2026-10-17T16:02:00Z',
       },
       writing: {
-        task1Response: 'The chart gives information about the percentage of overseas tertiary students studying in five host countries from 2015 to 2025.',
-        task2Response: 'People have different views about the primary goal of university education. Some think it should provide job skills, while others believe general knowledge is more important.',
+        task1Response: 'The chart gives information about the percentage of overseas tertiary students studying in five host countries from 2015 to 2025. Canada experienced rapid growth, reaching approximately 21 percent by 2025.',
+        task2Response: 'People have different views about the primary goal of university education. Some think it should provide job skills, while others believe intellectual breadth is more important. In my opinion, balancing academic theory with experiential learning produces the most resilient graduates.',
         task1WordCount: 162,
         task2WordCount: 275,
         bandScore: 7.0,
@@ -408,7 +556,8 @@ export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
         completedAt: '2026-10-17T17:02:00Z',
       },
       speaking: {
-        mode: 'examiner_interview',
+        mode: 'audio_record',
+        recordings: DUMMY_RECORDINGS.sadia,
         fcScore: 7.5,
         lrScore: 7.5,
         graScore: 7.0,
@@ -419,53 +568,58 @@ export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
       },
     },
   },
+
+  // ATTEMPT 3: Tanvir Ahmed Chowdhury (PENDING EVALUATION - Audio & Essays Ready For Examiner Grading!)
   {
     id: 'ATT-2026-003',
     candidateId: 'BUBT-2026-1044',
     testId: 'bubt-mock-01',
     testTitle: 'Full Mock With Speaking - 1',
     testType: 'academic',
-    startedAt: '2026-10-16T11:15:00Z',
-    completedAt: '2026-10-16T14:00:00Z',
-    status: 'evaluated',
-    overallBandScore: 7.0,
-    cefrLevel: 'C1 Advanced',
+    startedAt: '2026-10-18T07:15:00Z',
+    completedAt: '2026-10-18T10:00:00Z',
+    status: 'pending',
+    overallBandScore: 0,
+    cefrLevel: 'Pending Moderation',
     scores: {
       listening: {
-        rawScore: 31,
-        bandScore: 7.0,
-        answers: {},
-        completedAt: '2026-10-16T11:47:00Z',
+        rawScore: 32,
+        bandScore: 7.5,
+        answers: { l1: 'Pendleton', l2: 'garden', l3: 'October', l4: '4', l6: 'Vegetarian breakfast' },
+        completedAt: '2026-10-18T07:47:00Z',
       },
       reading: {
-        rawScore: 30,
+        rawScore: 31,
         bandScore: 7.0,
-        answers: {},
-        completedAt: '2026-10-16T12:47:00Z',
+        answers: { r1: 'TRUE', r2: 'FALSE', r3: 'NOT GIVEN' },
+        completedAt: '2026-10-18T08:47:00Z',
       },
       writing: {
-        task1Response: 'This chart illustrates the trends of international student distribution...',
-        task2Response: 'In modern society, education plays a vital role in determining career success...',
-        task1WordCount: 155,
-        task2WordCount: 260,
-        bandScore: 6.5,
-        task1Band: 6.5,
-        task2Band: 6.5,
-        feedback: 'Good task achievement. Needs more varied complex sentence linkages.',
-        completedAt: '2026-10-16T13:47:00Z',
+        task1Response: 'The line chart outlines the shifting proportions of international students across major host nations over a ten-year duration. Noticeably, Canada displayed an uninterrupted upward trajectory, whilst the United States experienced a measured decline despite remaining the market leader initially.',
+        task2Response: 'It is often argued that the primary purpose of higher education should strictly be preparing students for professional careers, whereas others maintain it serves to expand broader intellectual capacities. In my perspective, vocational readiness and intellectual enlightenment are mutually reinforcing rather than contradictory.',
+        task1WordCount: 178,
+        task2WordCount: 286,
+        bandScore: 0,
+        task1Band: 0,
+        task2Band: 0,
+        feedback: 'Submission received — awaiting Room 307 Faculty Examiner scoring.',
+        completedAt: '2026-10-18T09:47:00Z',
       },
       speaking: {
         mode: 'audio_record',
-        fcScore: 7.0,
-        lrScore: 7.0,
-        graScore: 7.0,
-        prScore: 7.0,
-        bandScore: 7.0,
-        feedback: 'Clear pronunciation, responds comfortably to all prompts. Good vocabulary on academic topics.',
-        completedAt: '2026-10-16T14:00:00Z',
+        recordings: DUMMY_RECORDINGS.tanvir,
+        fcScore: 0,
+        lrScore: 0,
+        graScore: 0,
+        prScore: 0,
+        bandScore: 0,
+        feedback: 'Candidate voice audio captured for Parts 1, 2, and 3. Awaiting Cambridge rubric moderation in Room 307 Speaking Evaluation Lab.',
+        completedAt: '2026-10-18T10:00:00Z',
       },
     },
   },
+
+  // ATTEMPT 4: Farhana Akter (EVALUATED - Band 7.5)
   {
     id: 'ATT-2026-004',
     candidateId: 'BUBT-2026-1045',
@@ -491,8 +645,8 @@ export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
         completedAt: '2026-10-15T18:32:00Z',
       },
       writing: {
-        task1Response: 'The visual representation depicts the international student proportion across five countries...',
-        task2Response: 'Whether institutions of higher learning should emphasize vocational preparedness or broad academic horizons is a multifaceted issue...',
+        task1Response: 'The visual representation depicts the international student proportion across five countries from 2015 to 2025.',
+        task2Response: 'Whether institutions of higher learning should emphasize vocational preparedness or broad academic horizons is a multifaceted issue that impacts global economic productivity.',
         task1WordCount: 170,
         task2WordCount: 290,
         bandScore: 7.0,
@@ -503,13 +657,114 @@ export const INITIAL_TEST_ATTEMPTS: TestAttempt[] = [
       },
       speaking: {
         mode: 'audio_record',
+        recordings: DUMMY_RECORDINGS.farhana,
         fcScore: 7.5,
         lrScore: 7.5,
         graScore: 7.0,
         prScore: 7.5,
         bandScore: 7.5,
-        feedback: 'Speaks fluently with very few pauses. Well-developed cue card response.',
+        feedback: 'Speaks fluently with very few pauses. Well-developed cue card response with accurate pronunciation.',
         completedAt: '2026-10-15T19:40:00Z',
+      },
+    },
+  },
+
+  // ATTEMPT 5: Nusrat Jahan Mim (PENDING EVALUATION - Audio & Essays Ready For Examiner Grading!)
+  {
+    id: 'ATT-2026-005',
+    candidateId: 'BUBT-2026-1047',
+    testId: 'bubt-mock-02',
+    testTitle: 'Academic Mock 02 — AI & Future Technologies',
+    testType: 'academic',
+    startedAt: '2026-10-18T08:30:00Z',
+    completedAt: '2026-10-18T11:15:00Z',
+    status: 'pending',
+    overallBandScore: 0,
+    cefrLevel: 'Pending Moderation',
+    scores: {
+      listening: {
+        rawScore: 36,
+        bandScore: 8.0,
+        answers: { l1: 'Pendleton', l2: 'garden', l3: 'October', l4: '4', l5: '445210', l6: 'Vegetarian breakfast' },
+        completedAt: '2026-10-18T09:02:00Z',
+      },
+      reading: {
+        rawScore: 37,
+        bandScore: 8.5,
+        answers: { r1: 'TRUE', r2: 'FALSE', r3: 'TRUE', r4: 'FALSE', r5: 'NOT GIVEN' },
+        completedAt: '2026-10-18T10:02:00Z',
+      },
+      writing: {
+        task1Response: 'The provided data highlights the comparative adoption rates of automated logistics systems across European port facilities between 2018 and 2026. A striking trend is the exponential transition towards autonomous electric cranes in Rotterdam and Hamburg, which reduced turnaround times by over 45 percent.',
+        task2Response: 'As artificial intelligence and automated decision systems penetrate essential civic and financial sectors, the ethical responsibility of algorithmic accountability has transitioned from a theoretical concern into an urgent regulatory necessity. I strongly advocate for transparent algorithmic auditing to prevent systemic societal biases.',
+        task1WordCount: 195,
+        task2WordCount: 320,
+        bandScore: 0,
+        task1Band: 0,
+        task2Band: 0,
+        feedback: 'Awaiting Room 307 Examiner evaluation for Writing Task 1 & Task 2.',
+        completedAt: '2026-10-18T11:02:00Z',
+      },
+      speaking: {
+        mode: 'audio_record',
+        recordings: DUMMY_RECORDINGS.nusrat,
+        fcScore: 0,
+        lrScore: 0,
+        graScore: 0,
+        prScore: 0,
+        bandScore: 0,
+        feedback: 'High-quality audio submitted for Parts 1, 2, and 3. Ready for examiner scoring across FC, LR, GRA, PR.',
+        completedAt: '2026-10-18T11:15:00Z',
+      },
+    },
+  },
+
+  // ATTEMPT 6: Mahmudul Hasan (PENDING EVALUATION - Audio & Essays Ready For Examiner Grading!)
+  {
+    id: 'ATT-2026-006',
+    candidateId: 'BUBT-2026-1048',
+    testId: 'cambridge-02-t1',
+    testTitle: 'Cambridge 02 — Environmental Science & Global Climate',
+    testType: 'academic',
+    startedAt: '2026-10-18T11:30:00Z',
+    completedAt: '2026-10-18T14:15:00Z',
+    status: 'pending',
+    overallBandScore: 0,
+    cefrLevel: 'Pending Moderation',
+    scores: {
+      listening: {
+        rawScore: 28,
+        bandScore: 6.5,
+        answers: {},
+        completedAt: '2026-10-18T12:02:00Z',
+      },
+      reading: {
+        rawScore: 29,
+        bandScore: 6.5,
+        answers: {},
+        completedAt: '2026-10-18T13:02:00Z',
+      },
+      writing: {
+        task1Response: 'The chart illustrates carbon emission reductions achieved by introducing electric public bus fleets in three metropolitan cities...',
+        task2Response: 'Global climate change necessitates urgent collaborative policy between industrialized nations and emerging economies. While economic growth remains vital, environmental preservation must take precedence.',
+        task1WordCount: 165,
+        task2WordCount: 260,
+        bandScore: 0,
+        task1Band: 0,
+        task2Band: 0,
+        feedback: 'Awaiting examiner marking.',
+        completedAt: '2026-10-18T14:02:00Z',
+      },
+      speaking: {
+        mode: 'audio_record',
+        recordings: DUMMY_RECORDINGS.mahmudul,
+        fcScore: 0,
+        lrScore: 0,
+        graScore: 0,
+        prScore: 0,
+        bandScore: 0,
+        feedback: 'Speaking recording submitted. Ready for examiner evaluation in Room 307 lab.',
+        completedAt: '2026-10-18T14:15:00Z',
       },
     },
   },

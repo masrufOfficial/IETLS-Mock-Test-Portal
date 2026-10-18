@@ -13,8 +13,8 @@ export function getCandidates(): Candidate[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(CANDIDATES_KEY);
   if (!stored) {
-    localStorage.setItem(CANDIDATES_KEY, JSON.stringify([]));
-    return [];
+    localStorage.setItem(CANDIDATES_KEY, JSON.stringify(INITIAL_CANDIDATES));
+    return INITIAL_CANDIDATES;
   }
   try {
     return JSON.parse(stored);
@@ -48,13 +48,23 @@ export function getTestAttempts(): TestAttempt[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(ATTEMPTS_KEY);
   if (!stored) {
-    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify([]));
-    return [];
+    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(INITIAL_TEST_ATTEMPTS));
+    return INITIAL_TEST_ATTEMPTS;
   }
   try {
-    return JSON.parse(stored);
+    const attempts: TestAttempt[] = JSON.parse(stored);
+    // Enrich matching initial sample attempts with recordings if missing
+    INITIAL_TEST_ATTEMPTS.forEach((initAttempt) => {
+      const match = attempts.find((a) => a.id === initAttempt.id);
+      if (match && (!match.scores?.speaking?.recordings || !match.scores.speaking.recordings.part1AudioUrl)) {
+        if (!match.scores) match.scores = initAttempt.scores;
+        if (!match.scores.speaking) match.scores.speaking = initAttempt.scores.speaking;
+        match.scores.speaking.recordings = initAttempt.scores.speaking.recordings;
+      }
+    });
+    return attempts;
   } catch {
-    return [];
+    return INITIAL_TEST_ATTEMPTS;
   }
 }
 
@@ -92,6 +102,7 @@ export function loadSampleDemoData(): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(CANDIDATES_KEY, JSON.stringify(INITIAL_CANDIDATES));
   localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(INITIAL_TEST_ATTEMPTS));
+  localStorage.setItem(MOCK_TESTS_KEY, JSON.stringify(INITIAL_MOCK_TESTS));
   if (INITIAL_CANDIDATES.length > 0) {
     localStorage.setItem(CURRENT_CANDIDATE_KEY, JSON.stringify(INITIAL_CANDIDATES[0]));
   }

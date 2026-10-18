@@ -61,7 +61,7 @@ export interface TestAttempt {
   scores: ModuleScores;
   overallBandScore: number;
   cefrLevel: string; // e.g. C2, C1, B2, B1
-  status: 'in_progress' | 'completed' | 'evaluated';
+  status: 'in_progress' | 'completed' | 'evaluated' | 'pending';
 }
 
 export interface QuestionItem {
