@@ -83,8 +83,22 @@ export default function AdminPage() {
   }, []);
 
   const loadData = () => {
-    setCandidates(getCandidates());
-    setAttempts(getTestAttempts());
+    let loadedCandidates = getCandidates();
+    let loadedAttempts = getTestAttempts();
+
+    // Auto seed if storage is empty and user has not explicitly wiped it
+    if (
+      loadedCandidates.length === 0 &&
+      typeof window !== 'undefined' &&
+      sessionStorage.getItem('bubt_db_explicitly_cleared') !== 'true'
+    ) {
+      loadSampleDemoData();
+      loadedCandidates = getCandidates();
+      loadedAttempts = getTestAttempts();
+    }
+
+    setCandidates(loadedCandidates);
+    setAttempts(loadedAttempts);
   };
 
   const handleDeleteCandidate = (candidateId: string) => {
@@ -304,16 +318,108 @@ export default function AdminPage() {
         </div>
       </header>
 
+      {/* Mobile Top Navigation & Operations Bar (Visible only on < lg) */}
+      <div className="lg:hidden bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 sticky top-[73px] z-30 shadow-xs space-y-2">
+        {/* Mobile Tab Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl">
+          <button
+            onClick={() => setAdminSection('candidates')}
+            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              adminSection === 'candidates'
+                ? 'bg-[#0b2860] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>Dossiers</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                adminSection === 'candidates' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+              }`}
+            >
+              {candidates.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setAdminSection('speaking')}
+            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              adminSection === 'speaking'
+                ? 'bg-[#df5647] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Mic className="w-3.5 h-3.5" />
+            <span>Speaking Lab</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                adminSection === 'speaking' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-700'
+              }`}
+            >
+              {attempts.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setAdminSection('builder')}
+            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              adminSection === 'builder'
+                ? 'bg-[#0b2860] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Builder</span>
+          </button>
+        </div>
+
+        {/* Mobile Quick Actions Strip */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar text-xs">
+          <button
+            onClick={handleLoadDemoData}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-[#0b2860] font-bold rounded-xl active:scale-95 shadow-2xs"
+            title="Load 8 sample students and voice recordings"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>Load Demo Data</span>
+          </button>
+          <button
+            onClick={() => generateBatchSummaryPdf(candidates, attempts)}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white font-bold rounded-xl shadow-2xs active:scale-95"
+            title="Download PDF"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Batch PDF</span>
+          </button>
+          <button
+            onClick={() => exportBatchSummaryCsv(candidates, attempts)}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl active:scale-95 shadow-2xs"
+            title="Export CSV"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={handleClearDatabase}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 font-bold rounded-xl active:scale-95 shadow-2xs"
+            title="Reset candidate database"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Reset DB</span>
+          </button>
+        </div>
+      </div>
+
       {/* Main Admin Workspace Container with 3-Zone Architecture */}
       <main className="flex-1 max-w-[1780px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row items-start gap-6">
 
           {/* =========================================================================
-              LEFT COLUMN: SUB-SECTIONS (Only when in Candidate Dossiers)
+              LEFT COLUMN: SUB-SECTIONS (Only when in Candidate Dossiers, hidden on mobile)
               Note: Speaking Lab & Mock Test Builder embed their own Left Sub-sections!
           ========================================================================= */}
           {adminSection === 'candidates' && (
-            <aside className="w-full lg:w-72 shrink-0 space-y-4">
+            <aside className="hidden lg:block lg:w-72 shrink-0 space-y-4">
               {/* Filter Sub-sections Card */}
               <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -446,45 +552,71 @@ export default function AdminPage() {
             {adminSection === 'candidates' && (
               <div className="space-y-6">
             {/* KPI Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1 truncate">
                   Registered Candidates
                 </span>
-                <div className="text-3xl font-black text-[#0b2860]">{totalCount}</div>
-                <span className="text-[11px] text-slate-400 mt-1 block">Students logged in academy</span>
+                <div className="text-2xl sm:text-3xl font-black text-[#0b2860]">{totalCount}</div>
+                <span className="text-[10px] sm:text-[11px] text-slate-400 mt-1 block truncate">Logged in academy</span>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1 truncate">
                   TRF Printed & Evaluated
                 </span>
-                <div className="text-3xl font-black text-emerald-600">{attemptsWithScores.length}</div>
-                <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">Ready for Office Handover</span>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-600">{attemptsWithScores.length}</div>
+                <span className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold mt-1 block truncate">Ready for Room 307</span>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1 truncate">
                   Average Overall Band
                 </span>
-                <div className="text-3xl font-black text-red-600">{avgOverall}</div>
-                <span className="text-[11px] text-slate-400 mt-1 block">Official Cambridge scale</span>
+                <div className="text-2xl sm:text-3xl font-black text-red-600">{avgOverall}</div>
+                <span className="text-[10px] sm:text-[11px] text-slate-400 mt-1 block truncate">Cambridge scale</span>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1 truncate">
                   High Band Scorers (7.0+)
                 </span>
-                <div className="text-3xl font-black text-[#0b2860]">{highScorers}</div>
-                <span className="text-[11px] text-slate-400 mt-1 block">C1 Advanced / C2 Proficient</span>
+                <div className="text-2xl sm:text-3xl font-black text-[#0b2860]">{highScorers}</div>
+                <span className="text-[10px] sm:text-[11px] text-slate-400 mt-1 block truncate">C1 Advanced / C2</span>
               </div>
             </div>
+
+            {/* Empty State Banner if no candidates */}
+            {candidates.length === 0 && (
+              <div className="bg-gradient-to-r from-blue-50 via-white to-amber-50 border-2 border-dashed border-blue-200 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+                <div className="flex items-center gap-3.5 text-center sm:text-left">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0b2860] text-amber-300 flex items-center justify-center shrink-0 mx-auto sm:mx-0 shadow-xs">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 text-sm sm:text-base">
+                      Candidate Roster is Currently Empty
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Load 8 sample student dossiers with mock test attempts, essays, and speaking voice recordings for testing.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLoadDemoData}
+                  className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 bg-[#0b2860] hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
+                >
+                  <RotateCcw className="w-4 h-4 text-amber-300" />
+                  <span>Load Sample Demo Data</span>
+                </button>
+              </div>
+            )}
 
             {/* Master Candidates Table Container */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               {/* Table Search & Filter Bar */}
-              <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="relative w-full sm:w-80">
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+                <div className="relative w-full lg:w-80">
                   <input
                     type="text"
                     placeholder="Search candidate name, ID, or university..."
@@ -495,10 +627,10 @@ export default function AdminPage() {
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
                   <button
                     onClick={() => setStatusFilter('all')}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    className={`shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                       statusFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
@@ -506,19 +638,27 @@ export default function AdminPage() {
                   </button>
                   <button
                     onClick={() => setStatusFilter('evaluated')}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    className={`shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                       statusFilter === 'evaluated' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    Evaluated ({attemptsWithScores.length})
+                    Ready at 307 ({attemptsWithScores.length})
                   </button>
                   <button
                     onClick={() => setStatusFilter('pending')}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    className={`shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                       statusFilter === 'pending' ? 'bg-white text-amber-800 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
                     Pending ({candidates.length - attemptsWithScores.length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('high')}
+                    className={`shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      statusFilter === 'high' ? 'bg-white text-red-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    7.0+ High ({highScorers})
                   </button>
                 </div>
               </div>
@@ -542,8 +682,59 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
-                    {filteredCandidates.map((candidate) => {
-                      const attempt = attempts.find((a) => a.candidateId === candidate.id);
+                    {filteredCandidates.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-14 px-4 text-center">
+                          <div className="max-w-md mx-auto space-y-4">
+                            <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-50 border border-blue-200 text-[#0b2860] flex items-center justify-center shadow-xs">
+                              <User className="w-8 h-8 text-[#0b2860]" />
+                            </div>
+                            <div>
+                              <h4 className="text-base font-black text-slate-900">
+                                {candidates.length === 0 ? 'Candidate Roster is Empty' : 'No Matching Candidates'}
+                              </h4>
+                              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+                                {candidates.length === 0
+                                  ? 'No candidates are registered in the portal yet. Load sample Cambridge candidate dossiers with audio recordings for instant review.'
+                                  : 'Try adjusting your search keywords or switching back to the "All Candidates" filter.'}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                              {candidates.length === 0 ? (
+                                <>
+                                  <button
+                                    onClick={handleLoadDemoData}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0b2860] hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
+                                  >
+                                    <Sparkles className="w-4 h-4 text-amber-300" />
+                                    <span>Load 8 Sample Students & Audio</span>
+                                  </button>
+                                  <Link
+                                    href="/"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                                    <span>Register New Student</span>
+                                  </Link>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSearchTerm('');
+                                    setStatusFilter('all');
+                                  }}
+                                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all"
+                                >
+                                  Clear Filters & Search
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCandidates.map((candidate) => {
+                        const attempt = attempts.find((a) => a.candidateId === candidate.id);
                       const hasScore = attempt && attempt.overallBandScore > 0;
 
                       return (
@@ -640,7 +831,8 @@ export default function AdminPage() {
                           </td>
                         </tr>
                       );
-                    })}
+                    })
+                  )}
                   </tbody>
                 </table>
               </div>
@@ -826,9 +1018,9 @@ export default function AdminPage() {
       </div>
 
       {/* =========================================================================
-          RIGHT COLUMN: PRIMARY MENUBAR (w-full lg:w-80 shrink-0)
+          RIGHT COLUMN: PRIMARY MENUBAR (hidden on mobile, lg:w-80 shrink-0)
       ========================================================================= */}
-      <aside className="w-full lg:w-80 shrink-0 space-y-5 lg:sticky lg:top-24">
+      <aside className="hidden lg:block lg:w-80 shrink-0 space-y-5 lg:sticky lg:top-24">
         {/* Primary Menubar Navigation Box */}
         <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div className="pb-3 border-b border-slate-100 flex items-center justify-between">

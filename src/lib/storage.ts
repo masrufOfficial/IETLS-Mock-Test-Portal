@@ -10,16 +10,29 @@ const CURRENT_CANDIDATE_KEY = 'bubt_ielts_current_candidate';
 const MOCK_TESTS_KEY = 'bubt_ielts_mock_tests';
 
 export function getCandidates(): Candidate[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return INITIAL_CANDIDATES;
   const stored = localStorage.getItem(CANDIDATES_KEY);
-  if (!stored) {
+  const explicitlyCleared = sessionStorage.getItem('bubt_db_explicitly_cleared');
+  
+  if (!stored || stored === '[]' || stored === 'null') {
+    if (explicitlyCleared === 'true') {
+      return [];
+    }
     localStorage.setItem(CANDIDATES_KEY, JSON.stringify(INITIAL_CANDIDATES));
     return INITIAL_CANDIDATES;
   }
   try {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+    if (explicitlyCleared === 'true') {
+      return [];
+    }
+    localStorage.setItem(CANDIDATES_KEY, JSON.stringify(INITIAL_CANDIDATES));
+    return INITIAL_CANDIDATES;
   } catch {
-    return [];
+    return INITIAL_CANDIDATES;
   }
 }
 
@@ -45,14 +58,26 @@ export function deleteCandidate(candidateId: string): void {
 }
 
 export function getTestAttempts(): TestAttempt[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return INITIAL_TEST_ATTEMPTS;
   const stored = localStorage.getItem(ATTEMPTS_KEY);
-  if (!stored) {
+  const explicitlyCleared = sessionStorage.getItem('bubt_db_explicitly_cleared');
+
+  if (!stored || stored === '[]' || stored === 'null') {
+    if (explicitlyCleared === 'true') {
+      return [];
+    }
     localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(INITIAL_TEST_ATTEMPTS));
     return INITIAL_TEST_ATTEMPTS;
   }
   try {
     const attempts: TestAttempt[] = JSON.parse(stored);
+    if (!Array.isArray(attempts) || attempts.length === 0) {
+      if (explicitlyCleared === 'true') {
+        return [];
+      }
+      localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(INITIAL_TEST_ATTEMPTS));
+      return INITIAL_TEST_ATTEMPTS;
+    }
     // Enrich matching initial sample attempts with recordings if missing
     INITIAL_TEST_ATTEMPTS.forEach((initAttempt) => {
       const match = attempts.find((a) => a.id === initAttempt.id);
@@ -93,6 +118,7 @@ export function getCurrentCandidate(): Candidate | null {
 
 export function clearAllDatabase(): void {
   if (typeof window === 'undefined') return;
+  sessionStorage.setItem('bubt_db_explicitly_cleared', 'true');
   localStorage.setItem(CANDIDATES_KEY, JSON.stringify([]));
   localStorage.setItem(ATTEMPTS_KEY, JSON.stringify([]));
   localStorage.removeItem(CURRENT_CANDIDATE_KEY);
@@ -100,6 +126,7 @@ export function clearAllDatabase(): void {
 
 export function loadSampleDemoData(): void {
   if (typeof window === 'undefined') return;
+  sessionStorage.removeItem('bubt_db_explicitly_cleared');
   localStorage.setItem(CANDIDATES_KEY, JSON.stringify(INITIAL_CANDIDATES));
   localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(INITIAL_TEST_ATTEMPTS));
   localStorage.setItem(MOCK_TESTS_KEY, JSON.stringify(INITIAL_MOCK_TESTS));

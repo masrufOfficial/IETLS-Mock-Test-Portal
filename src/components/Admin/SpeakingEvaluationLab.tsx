@@ -22,7 +22,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Candidate, TestAttempt } from '@/types';
-import { updateAttemptEvaluation } from '@/lib/storage';
+import { updateAttemptEvaluation, loadSampleDemoData } from '@/lib/storage';
 import { generateCandidateTRFPdf } from '@/lib/pdf-generator';
 
 interface SpeakingEvaluationLabProps {
@@ -273,7 +273,7 @@ export const SpeakingEvaluationLab: React.FC<SpeakingEvaluationLabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* LEFT PANEL: Candidate Submissions Queue (col-span-4) */}
-        <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[750px]">
+        <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[340px] sm:h-[440px] lg:h-[750px]">
           {/* Search & Filter */}
           <div className="p-4 border-b border-slate-100 space-y-3">
             <div className="relative">
@@ -324,8 +324,25 @@ export const SpeakingEvaluationLab: React.FC<SpeakingEvaluationLabProps> = ({
           {/* Candidate List */}
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 p-2 space-y-1">
             {filteredAttempts.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">
-                No speaking submissions found matching criteria.
+              <div className="p-6 text-center space-y-3">
+                <Mic className="w-8 h-8 mx-auto text-slate-300" />
+                <p className="text-xs text-slate-500 font-medium">
+                  {attempts.length === 0
+                    ? 'No speaking submissions in the system yet.'
+                    : 'No speaking submissions match current criteria.'}
+                </p>
+                {attempts.length === 0 && (
+                  <button
+                    onClick={() => {
+                      loadSampleDemoData();
+                      if (onDataUpdated) onDataUpdated();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0b2860] hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Load Sample Submissions with Audio</span>
+                  </button>
+                )}
               </div>
             ) : (
               filteredAttempts.map((att) => {
@@ -763,8 +780,28 @@ export const SpeakingEvaluationLab: React.FC<SpeakingEvaluationLabProps> = ({
 
           </div>
         ) : (
-          <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200 p-12 text-center text-slate-400">
-            Select a candidate from the queue to open their Speaking Evaluation Studio.
+          <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center text-slate-500 space-y-3">
+            <Mic className="w-10 h-10 mx-auto text-slate-300" />
+            <h4 className="text-base font-bold text-slate-800">
+              {attempts.length === 0 ? 'No Submissions Ready for Evaluation' : 'Candidate Evaluation Studio'}
+            </h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              {attempts.length === 0
+                ? 'Load demo candidates with speaking voice recordings to test audio playback, 4-criterion grading, and TRF moderation.'
+                : 'Select any candidate from the queue (on the left, or above on mobile) to listen to Part 1 and Part 2 audio recordings, adjust rubric criteria, and commit final speaking scores.'}
+            </p>
+            {attempts.length === 0 && (
+              <button
+                onClick={() => {
+                  loadSampleDemoData();
+                  if (onDataUpdated) onDataUpdated();
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#0b2860] hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Load Sample Submissions with Audio</span>
+              </button>
+            )}
           </div>
         )}
 
